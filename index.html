@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>99 Noches en el Bosque</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- PANTALLA DE INICIO -->
+  <div id="menu">
+
+    <div class="menu-contenido">
+      <p class="subtitulo">¿PODRÁS SOBREVIVIR?</p>
+
+      <h1>99 NOCHES</h1>
+      <h2>EN EL BOSQUE</h2>
+
+      <p class="descripcion">
+        El bosque cambia cuando cae la noche.
+        Mantén encendida la fogata, consigue recursos
+        y sobrevive durante 99 noches.
+      </p>
+
+      <button id="botonJugar">
+        JUGAR
+      </button>
+
+      <p class="controles">
+        WASD para moverte
+      </p>
+    </div>
+
+  </div>
+
+
+  <!-- JUEGO -->
+  <div id="juego">
+
+    <!-- INTERFAZ -->
+    <div id="hud">
+
+      <div class="estadistica vida">
+        ❤️
+        <span id="vida">100</span>
+      </div>
+
+      <div class="estadistica hambre">
+        🍖
+        <span id="hambre">100</span>
+      </div>
+
+      <div class="noche">
+        NOCHE
+        <span id="numeroNoche">1</span>
+        / 99
+      </div>
+
+      <div class="estadistica madera">
+        🪵
+        <span id="madera">0</span>
+      </div>
+
+    </div>
+
+
+    <!-- CANVAS DONDE FUNCIONARÁ EL JUEGO -->
+    <canvas id="gameCanvas"></canvas>
+
+
+    <!-- MENSAJES -->
+    <div id="mensaje">
+      Mantén encendida la fogata...
+    </div>
+
+  </div>
+
+
+  <!-- GAME OVER -->
+  <div id="gameOver">
+
+    <div class="game-over-contenido">
+
+      <p>EL BOSQUE TE ATRAPÓ</p>
+
+      <h1>GAME OVER</h1>
+
+      <p>
+        Sobreviviste hasta la noche
+        <span id="nocheFinal">1</span>
+      </p>
+
+      <button id="reiniciar">
+        INTENTAR DE NUEVO
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
