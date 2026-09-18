@@ -1,19 +1,9 @@
-// ==========================================
-// 99 NOCHES EN EL BOSQUE
-// V0.1
-// ==========================================
-
-
-// ==========================================
-// ELEMENTOS HTML
-// ==========================================
-
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const menu = document.getElementById("menu");
 const juego = document.getElementById("juego");
-const gameOverPantalla = document.getElementById("gameOver");
+const gameOver = document.getElementById("gameOver");
 
 const botonJugar = document.getElementById("botonJugar");
 const botonReiniciar = document.getElementById("reiniciar");
@@ -22,838 +12,599 @@ const vidaTexto = document.getElementById("vida");
 const hambreTexto = document.getElementById("hambre");
 const maderaTexto = document.getElementById("madera");
 const nocheTexto = document.getElementById("numeroNoche");
-const nocheFinalTexto = document.getElementById("nocheFinal");
-const mensajeTexto = document.getElementById("mensaje");
+const mensaje = document.getElementById("mensaje");
 
-
-// ==========================================
-// CONFIGURACIÓN DEL MUNDO
-// ==========================================
-
-const MUNDO_ANCHO = 3000;
-const MUNDO_ALTO = 3000;
-
-// Cada ciclo dura 60 segundos por ahora.
-// Luego podemos cambiarlo.
-const DURACION_CICLO = 60;
-
-let juegoActivo = false;
+let jugando = false;
 let teclas = {};
 
-let ultimaHora = 0;
-
-let noche = 1;
-let tiempoDia = 0;
-
-let temporizadorMensaje;
-
-
-// ==========================================
-// JUGADOR
-// ==========================================
+const mundo = {
+    ancho: 3000,
+    alto: 3000
+};
 
 const jugador = {
-
-    x: MUNDO_ANCHO / 2,
-    y: MUNDO_ALTO / 2 + 170,
-
+    x: 1500,
+    y: 1650,
     radio: 18,
-
-    velocidad: 230,
-
+    velocidad: 4,
     vida: 100,
     hambre: 100,
-
-    madera: 0,
-
-    direccionX: 0,
-    direccionY: 1
-
+    madera: 0
 };
-
-
-// ==========================================
-// FOGATA
-// ==========================================
 
 const fogata = {
-
-    x: MUNDO_ANCHO / 2,
-    y: MUNDO_ALTO / 2,
-
-    combustible: 100,
-
-    radioLuz: 280
-
+    x: 1500,
+    y: 1500
 };
-
-
-// ==========================================
-// CÁMARA
-// ==========================================
 
 const camara = {
-
     x: 0,
     y: 0
-
 };
-
-
-// ==========================================
-// ÁRBOLES
-// ==========================================
 
 let arboles = [];
 
 
-function generarArboles() {
-
-    arboles = [];
-
-    for (let i = 0; i < 180; i++) {
-
-        let x;
-        let y;
-        let distanciaFogata;
-
-        do {
-
-            x = 80 + Math.random() * (MUNDO_ANCHO - 160);
-            y = 80 + Math.random() * (MUNDO_ALTO - 160);
-
-            distanciaFogata = Math.hypot(
-                x - fogata.x,
-                y - fogata.y
-            );
-
-        } while (distanciaFogata < 330);
-
-
-        arboles.push({
-
-            x: x,
-            y: y,
-
-            radio: 27,
-
-            resistencia: 3,
-
-            vivo: true
-
-        });
-
-    }
-
-}
-
-
-// ==========================================
-// AJUSTAR CANVAS
-// ==========================================
+// ===============================
+// CANVAS
+// ===============================
 
 function ajustarCanvas() {
-
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
 }
 
-
-window.addEventListener(
-    "resize",
-    ajustarCanvas
-);
-
+window.addEventListener("resize", ajustarCanvas);
 
 ajustarCanvas();
 
 
-// ==========================================
-// TECLADO
-// ==========================================
+// ===============================
+// CREAR BOSQUE
+// ===============================
 
-window.addEventListener(
-    "keydown",
-    function (event) {
+function crearBosque() {
 
-        const tecla = event.key.toLowerCase();
+    arboles = [];
 
-        teclas[tecla] = true;
+    for (let i = 0; i < 150; i++) {
 
+        let x;
+        let y;
+        let distancia;
 
-        if (
-            tecla === "arrowup" ||
-            tecla === "arrowdown" ||
-            tecla === "arrowleft" ||
-            tecla === "arrowright"
-        ) {
+        do {
 
-            event.preventDefault();
+            x = Math.random() * mundo.ancho;
+            y = Math.random() * mundo.alto;
 
-        }
+            distancia = Math.hypot(
+                x - fogata.x,
+                y - fogata.y
+            );
 
+        } while (distancia < 300);
 
-        // E = golpear / recoger árbol
-
-        if (
-            tecla === "e" &&
-            !event.repeat
-        ) {
-
-            interactuar();
-
-        }
-
-
-        // F = poner madera en fogata
-
-        if (
-            tecla === "f" &&
-            !event.repeat
-        ) {
-
-            alimentarFogata();
-
-        }
-
+        arboles.push({
+            x: x,
+            y: y
+        });
     }
-);
+}
 
 
-window.addEventListener(
-    "keyup",
-    function (event) {
+// ===============================
+// BOTÓN JUGAR
+// ===============================
 
-        teclas[event.key.toLowerCase()] = false;
-
-    }
-);
-
-
-// ==========================================
-// BOTONES
-// ==========================================
-
-botonJugar.addEventListener(
-    "click",
-    iniciarJuego
-);
-
-
-botonReiniciar.addEventListener(
-    "click",
-    iniciarJuego
-);
-
-
-// ==========================================
-// INICIAR JUEGO
-// ==========================================
-
-function iniciarJuego() {
+botonJugar.addEventListener("click", function () {
 
     menu.style.display = "none";
-
-    gameOverPantalla.style.display = "none";
-
+    gameOver.style.display = "none";
     juego.style.display = "block";
 
+    jugando = true;
 
-    // Restaurar texto de Game Over
+    jugador.x = 1500;
+    jugador.y = 1650;
 
-    const tituloGameOver =
-        document.querySelector(
-            ".game-over-contenido h1"
-        );
-
-    const textoGameOver =
-        document.querySelector(
-            ".game-over-contenido p:first-child"
-        );
-
-
-    tituloGameOver.textContent =
-        "GAME OVER";
-
-    tituloGameOver.style.color =
-        "#b74646";
-
-    textoGameOver.textContent =
-        "EL BOSQUE TE ATRAPÓ";
-
-
-    // Reiniciar jugador
-
-    jugador.x =
-        MUNDO_ANCHO / 2;
-
-    jugador.y =
-        MUNDO_ALTO / 2 + 170;
-
-    jugador.vida = 100;
-
-    jugador.hambre = 100;
-
-    jugador.madera = 0;
-
-
-    // Reiniciar fogata
-
-    fogata.combustible = 100;
-
-
-    // Reiniciar tiempo
-
-    noche = 1;
-
-    tiempoDia = 0;
-
-
-    // Crear bosque nuevo
-
-    generarArboles();
-
-
-    juegoActivo = true;
-
-    ultimaHora =
-        performance.now();
-
-
-    actualizarCamara();
+    crearBosque();
 
     actualizarHUD();
 
+    requestAnimationFrame(bucle);
 
-    mostrarMensaje(
-        "WASD = moverte | E = cortar árbol | F = alimentar fogata"
-    );
-
-
-    requestAnimationFrame(
-        bucle
-    );
-
-}
+});
 
 
-// ==========================================
-// BUCLE PRINCIPAL
-// ==========================================
+// ===============================
+// REINICIAR
+// ===============================
 
-function bucle(tiempoActual) {
+botonReiniciar.addEventListener("click", function () {
 
-    if (!juegoActivo) {
+    location.reload();
 
-        return;
-
-    }
+});
 
 
-    let delta =
-        (tiempoActual - ultimaHora) / 1000;
+// ===============================
+// TECLADO
+// ===============================
+
+window.addEventListener("keydown", function (evento) {
+
+    teclas[evento.key.toLowerCase()] = true;
+
+});
 
 
-    ultimaHora =
-        tiempoActual;
+window.addEventListener("keyup", function (evento) {
+
+    teclas[evento.key.toLowerCase()] = false;
+
+});
 
 
-    // Evita saltos enormes al cambiar de pestaña
-
-    delta =
-        Math.min(delta, 0.05);
-
-
-    actualizar(delta);
-
-    dibujar();
-
-
-    requestAnimationFrame(
-        bucle
-    );
-
-}
-
-
-// ==========================================
-// ACTUALIZAR JUEGO
-// ==========================================
-
-function actualizar(delta) {
-
-    moverJugador(delta);
-
-    actualizarCamara();
-
-    actualizarSupervivencia(delta);
-
-    actualizarCiclo(delta);
-
-    actualizarHUD();
-
-
-    if (jugador.vida <= 0) {
-
-        terminarJuego();
-
-    }
-
-}
-
-
-// ==========================================
+// ===============================
 // MOVIMIENTO
-// ==========================================
+// ===============================
 
-function moverJugador(delta) {
+function moverJugador() {
 
     let dx = 0;
     let dy = 0;
 
-
-    if (
-        teclas["w"] ||
-        teclas["arrowup"]
-    ) {
-
+    if (teclas["w"] || teclas["arrowup"]) {
         dy -= 1;
-
     }
 
-
-    if (
-        teclas["s"] ||
-        teclas["arrowdown"]
-    ) {
-
+    if (teclas["s"] || teclas["arrowdown"]) {
         dy += 1;
-
     }
 
-
-    if (
-        teclas["a"] ||
-        teclas["arrowleft"]
-    ) {
-
+    if (teclas["a"] || teclas["arrowleft"]) {
         dx -= 1;
-
     }
 
-
-    if (
-        teclas["d"] ||
-        teclas["arrowright"]
-    ) {
-
+    if (teclas["d"] || teclas["arrowright"]) {
         dx += 1;
-
     }
 
-
-    if (
-        dx !== 0 ||
-        dy !== 0
-    ) {
-
-        const longitud =
-            Math.hypot(dx, dy);
-
-
-        dx /= longitud;
-        dy /= longitud;
-
-
-        jugador.direccionX = dx;
-        jugador.direccionY = dy;
-
-
-        jugador.x +=
-            dx *
-            jugador.velocidad *
-            delta;
-
-
-        jugador.y +=
-            dy *
-            jugador.velocidad *
-            delta;
-
+    if (dx !== 0 && dy !== 0) {
+        dx *= 0.707;
+        dy *= 0.707;
     }
 
+    jugador.x += dx * jugador.velocidad;
+    jugador.y += dy * jugador.velocidad;
 
-    // Límites del mapa
+    jugador.x = Math.max(
+        20,
+        Math.min(mundo.ancho - 20, jugador.x)
+    );
 
-    jugador.x =
-        Math.max(
-            jugador.radio,
-            Math.min(
-                MUNDO_ANCHO - jugador.radio,
-                jugador.x
-            )
-        );
-
-
-    jugador.y =
-        Math.max(
-            jugador.radio,
-            Math.min(
-                MUNDO_ALTO - jugador.radio,
-                jugador.y
-            )
-        );
-
+    jugador.y = Math.max(
+        20,
+        Math.min(mundo.alto - 20, jugador.y)
+    );
 }
 
 
-// ==========================================
+// ===============================
 // CÁMARA
-// ==========================================
+// ===============================
 
 function actualizarCamara() {
 
     camara.x =
-        jugador.x -
-        canvas.width / 2;
-
+        jugador.x - canvas.width / 2;
 
     camara.y =
-        jugador.y -
-        canvas.height / 2;
-
-
-    const maxX =
-        Math.max(
-            0,
-            MUNDO_ANCHO - canvas.width
-        );
-
-
-    const maxY =
-        Math.max(
-            0,
-            MUNDO_ALTO - canvas.height
-        );
-
-
-    camara.x =
-        Math.max(
-            0,
-            Math.min(
-                maxX,
-                camara.x
-            )
-        );
-
-
-    camara.y =
-        Math.max(
-            0,
-            Math.min(
-                maxY,
-                camara.y
-            )
-        );
+        jugador.y - canvas.height / 2;
 
 }
 
 
-// ==========================================
-// SUPERVIVENCIA
-// ==========================================
-
-function actualizarSupervivencia(delta) {
-
-    // Hambre baja lentamente
-
-    jugador.hambre -=
-        0.35 * delta;
-
-
-    if (jugador.hambre <= 0) {
-
-        jugador.hambre = 0;
-
-        jugador.vida -=
-            4 * delta;
-
-    }
-
-
-    // La fogata pierde combustible
-
-    fogata.combustible -=
-        0.65 * delta;
-
-
-    fogata.combustible =
-        Math.max(
-            0,
-            fogata.combustible
-        );
-
-}
-
-
-// ==========================================
-// CICLO DE NOCHES
-// ==========================================
-
-function actualizarCiclo(delta) {
-
-    tiempoDia += delta;
-
-
-    if (
-        tiempoDia >= DURACION_CICLO
-    ) {
-
-        tiempoDia = 0;
-
-        noche++;
-
-
-        if (noche > 99) {
-
-            ganarJuego();
-
-            return;
-
-        }
-
-
-        mostrarMensaje(
-            "NOCHE " +
-            noche +
-            " — algo se mueve entre los árboles..."
-        );
-
-    }
-
-}
-
-
-// ==========================================
-// INTERACTUAR CON ÁRBOLES
-// ==========================================
-
-function interactuar() {
-
-    if (!juegoActivo) {
-
-        return;
-
-    }
-
-
-    let arbolMasCercano = null;
-
-    let distanciaMenor = 90;
-
-
-    for (
-        const arbol of arboles
-    ) {
-
-        if (!arbol.vivo) {
-
-            continue;
-
-        }
-
-
-        const distancia =
-            Math.hypot(
-
-                jugador.x - arbol.x,
-                jugador.y - arbol.y
-
-            );
-
-
-        if (
-            distancia < distanciaMenor
-        ) {
-
-            distanciaMenor =
-                distancia;
-
-            arbolMasCercano =
-                arbol;
-
-        }
-
-    }
-
-
-    if (!arbolMasCercano) {
-
-        mostrarMensaje(
-            "No hay ningún árbol suficientemente cerca."
-        );
-
-        return;
-
-    }
-
-
-    arbolMasCercano.resistencia--;
-
-
-    mostrarMensaje(
-        "Golpeaste el árbol."
-    );
-
-
-    if (
-        arbolMasCercano.resistencia <= 0
-    ) {
-
-        arbolMasCercano.vivo =
-            false;
-
-
-        jugador.madera += 3;
-
-
-        mostrarMensaje(
-            "Árbol cortado: +3 madera"
-        );
-
-    }
-
-}
-
-
-// ==========================================
-// ALIMENTAR FOGATA
-// ==========================================
-
-function alimentarFogata() {
-
-    if (!juegoActivo) {
-
-        return;
-
-    }
-
-
-    const distancia =
-        Math.hypot(
-
-            jugador.x - fogata.x,
-            jugador.y - fogata.y
-
-        );
-
-
-    if (distancia > 150) {
-
-        mostrarMensaje(
-            "Acércate más a la fogata."
-        );
-
-        return;
-
-    }
-
-
-    if (jugador.madera <= 0) {
-
-        mostrarMensaje(
-            "No tienes madera."
-        );
-
-        return;
-
-    }
-
-
-    jugador.madera--;
-
-
-    fogata.combustible =
-        Math.min(
-            100,
-            fogata.combustible + 25
-        );
-
-
-    mostrarMensaje(
-        "Añadiste madera a la fogata."
-    );
-
-}
-
-
-// ==========================================
+// ===============================
 // HUD
-// ==========================================
+// ===============================
 
 function actualizarHUD() {
 
-    vidaTexto.textContent =
-        Math.max(
-            0,
-            Math.ceil(jugador.vida)
-        );
-
-
-    hambreTexto.textContent =
-        Math.max(
-            0,
-            Math.ceil(jugador.hambre)
-        );
-
-
-    maderaTexto.textContent =
-        jugador.madera;
-
-
-    nocheTexto.textContent =
-        noche;
+    vidaTexto.textContent = jugador.vida;
+    hambreTexto.textContent = jugador.hambre;
+    maderaTexto.textContent = jugador.madera;
+    nocheTexto.textContent = 1;
 
 }
 
 
-// ==========================================
-// MENSAJES
-// ==========================================
+// ===============================
+// DIBUJAR SUELO
+// ===============================
 
-function mostrarMensaje(texto) {
+function dibujarSuelo() {
 
-    mensajeTexto.textContent =
-        texto;
+    ctx.fillStyle = "#172519";
 
-
-    mensajeTexto.style.opacity =
-        "1";
-
-
-    clearTimeout(
-        temporizadorMensaje
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
     );
 
 
-    temporizadorMensaje =
-        setTimeout(
-            function () {
+    // pequeñas plantas
 
-                mensajeTexto.style.opacity =
-                    "0.4";
+    ctx.fillStyle = "#263b28";
 
-            },
-            3000
-        );
+    for (let x = 0; x < canvas.width; x += 80) {
 
+        for (let y = 0; y < canvas.height; y += 80) {
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                3,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
+    }
 }
 
 
-// ==========================================
+// ===============================
+// DIBUJAR ÁRBOLES
+// ===============================
+
+function dibujarArboles() {
+
+    for (const arbol of arboles) {
+
+        const x = arbol.x - camara.x;
+        const y = arbol.y - camara.y;
+
+        if (
+            x < -80 ||
+            y < -100 ||
+            x > canvas.width + 80 ||
+            y > canvas.height + 100
+        ) {
+            continue;
+        }
+
+
+        // sombra
+
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+
+        ctx.beginPath();
+
+        ctx.ellipse(
+            x,
+            y + 22,
+            25,
+            10,
+            0,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+
+        // tronco
+
+        ctx.fillStyle = "#604127";
+
+        ctx.fillRect(
+            x - 7,
+            y,
+            14,
+            35
+        );
+
+
+        // copa inferior
+
+        ctx.fillStyle = "#173c24";
+
+        ctx.beginPath();
+
+        ctx.moveTo(x, y - 75);
+        ctx.lineTo(x - 35, y + 10);
+        ctx.lineTo(x + 35, y + 10);
+
+        ctx.closePath();
+
+        ctx.fill();
+
+
+        // copa superior
+
+        ctx.fillStyle = "#255632";
+
+        ctx.beginPath();
+
+        ctx.moveTo(x, y - 100);
+        ctx.lineTo(x - 28, y - 30);
+        ctx.lineTo(x + 28, y - 30);
+
+        ctx.closePath();
+
+        ctx.fill();
+    }
+}
+
+
+// ===============================
+// DIBUJAR FOGATA
+// ===============================
+
+function dibujarFogata() {
+
+    const x = fogata.x - camara.x;
+    const y = fogata.y - camara.y;
+
+
+    // luz
+
+    const luz = ctx.createRadialGradient(
+        x,
+        y,
+        10,
+        x,
+        y,
+        160
+    );
+
+    luz.addColorStop(
+        0,
+        "rgba(255,160,50,0.4)"
+    );
+
+    luz.addColorStop(
+        1,
+        "rgba(255,100,20,0)"
+    );
+
+    ctx.fillStyle = luz;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        160,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // madera
+
+    ctx.strokeStyle = "#6b4527";
+    ctx.lineWidth = 8;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x - 18,
+        y + 10
+    );
+
+    ctx.lineTo(
+        x + 18,
+        y - 5
+    );
+
+    ctx.moveTo(
+        x + 18,
+        y + 10
+    );
+
+    ctx.lineTo(
+        x - 18,
+        y - 5
+    );
+
+    ctx.stroke();
+
+
+    // llama roja
+
+    ctx.fillStyle = "#ff6b20";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 45
+    );
+
+    ctx.quadraticCurveTo(
+        x + 28,
+        y - 5,
+        x,
+        y + 8
+    );
+
+    ctx.quadraticCurveTo(
+        x - 28,
+        y - 5,
+        x,
+        y - 45
+    );
+
+    ctx.fill();
+
+
+    // llama amarilla
+
+    ctx.fillStyle = "#ffd45c";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 28
+    );
+
+    ctx.quadraticCurveTo(
+        x + 14,
+        y,
+        x,
+        y + 5
+    );
+
+    ctx.quadraticCurveTo(
+        x - 14,
+        y,
+        x,
+        y - 28
+    );
+
+    ctx.fill();
+}
+
+
+// ===============================
+// DIBUJAR JUGADOR
+// ===============================
+
+function dibujarJugador() {
+
+    const x = jugador.x - camara.x;
+    const y = jugador.y - camara.y;
+
+
+    // sombra
+
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        x,
+        y + 22,
+        16,
+        8,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // piernas
+
+    ctx.fillStyle = "#252d33";
+
+    ctx.fillRect(
+        x - 10,
+        y + 7,
+        8,
+        20
+    );
+
+    ctx.fillRect(
+        x + 2,
+        y + 7,
+        8,
+        20
+    );
+
+
+    // cuerpo
+
+    ctx.fillStyle = "#4e7288";
+
+    ctx.fillRect(
+        x - 14,
+        y - 17,
+        28,
+        29
+    );
+
+
+    // cabeza
+
+    ctx.fillStyle = "#d9ae87";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y - 29,
+        13,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // cabello
+
+    ctx.fillStyle = "#35261d";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y - 33,
+        13,
+        Math.PI,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // mochila
+
+    ctx.fillStyle = "#5b4028";
+
+    ctx.fillRect(
+        x - 18,
+        y - 10,
+        6,
+        20
+    );
+}
+
+
+// ===============================
+// OSCURIDAD
+// ===============================
+
+function dibujarOscuridad() {
+
+    ctx.fillStyle =
+        "rgba(2, 7, 5, 0.28)";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+
+// ===============================
 // DIBUJAR TODO
-// ==========================================
+// ===============================
 
 function dibujar() {
 
@@ -864,425 +615,41 @@ function dibujar() {
         canvas.height
     );
 
-
     dibujarSuelo();
 
-    dibujarLimites();
+    dibujarArboles();
 
     dibujarFogata();
-
-    dibujarArboles();
 
     dibujarJugador();
 
     dibujarOscuridad();
-
-    dibujarIndicadorFogata();
-
 }
 
 
-// ==========================================
-// SUELO
-// ==========================================
+// ===============================
+// BUCLE DEL JUEGO
+// ===============================
 
-function dibujarSuelo() {
+function bucle() {
 
-    ctx.fillStyle =
-        "#182619";
-
-
-    ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    // Patrón de pasto
-
-    ctx.fillStyle =
-        "#213421";
-
-
-    const tamaño =
-        90;
-
-
-    const inicioX =
-        Math.floor(
-            camara.x / tamaño
-        ) * tamaño;
-
-
-    const inicioY =
-        Math.floor(
-            camara.y / tamaño
-        ) * tamaño;
-
-
-    for (
-        let x = inicioX;
-        x < camara.x + canvas.width + tamaño;
-        x += tamaño
-    ) {
-
-        for (
-            let y = inicioY;
-            y < camara.y + canvas.height + tamaño;
-            y += tamaño
-        ) {
-
-            ctx.beginPath();
-
-
-            ctx.arc(
-
-                x - camara.x,
-                y - camara.y,
-
-                3,
-
-                0,
-                Math.PI * 2
-
-            );
-
-
-            ctx.fill();
-
-        }
-
-    }
-
-}
-
-
-// ==========================================
-// LÍMITES DEL BOSQUE
-// ==========================================
-
-function dibujarLimites() {
-
-    const izquierda =
-        -camara.x;
-
-    const arriba =
-        -camara.y;
-
-
-    ctx.strokeStyle =
-        "#334b35";
-
-
-    ctx.lineWidth =
-        8;
-
-
-    ctx.strokeRect(
-
-        izquierda,
-        arriba,
-
-        MUNDO_ANCHO,
-        MUNDO_ALTO
-
-    );
-
-}
-
-
-// ==========================================
-// ÁRBOLES
-// ==========================================
-
-function dibujarArboles() {
-
-    for (
-        const arbol of arboles
-    ) {
-
-        if (!arbol.vivo) {
-
-            continue;
-
-        }
-
-
-        const x =
-            arbol.x -
-            camara.x;
-
-
-        const y =
-            arbol.y -
-            camara.y;
-
-
-        if (
-            x < -80 ||
-            y < -120 ||
-            x > canvas.width + 80 ||
-            y > canvas.height + 120
-        ) {
-
-            continue;
-
-        }
-
-
-        // Sombra
-
-        ctx.fillStyle =
-            "rgba(0,0,0,0.30)";
-
-
-        ctx.beginPath();
-
-
-        ctx.ellipse(
-
-            x + 8,
-            y + 22,
-
-            28,
-            13,
-
-            0,
-
-            0,
-            Math.PI * 2
-
-        );
-
-
-        ctx.fill();
-
-
-        // Tronco
-
-        ctx.fillStyle =
-            "#5a3c25";
-
-
-        ctx.fillRect(
-
-            x - 7,
-            y - 4,
-
-            14,
-            42
-
-        );
-
-
-        // Copa inferior
-
-        ctx.fillStyle =
-            "#183b25";
-
-
-        ctx.beginPath();
-
-
-        ctx.moveTo(
-            x,
-            y - 70
-        );
-
-
-        ctx.lineTo(
-            x - 35,
-            y + 10
-        );
-
-
-        ctx.lineTo(
-            x + 35,
-            y + 10
-        );
-
-
-        ctx.closePath();
-
-        ctx.fill();
-
-
-        // Copa superior
-
-        ctx.fillStyle =
-            "#245332";
-
-
-        ctx.beginPath();
-
-
-        ctx.moveTo(
-            x,
-            y - 95
-        );
-
-
-        ctx.lineTo(
-            x - 29,
-            y - 25
-        );
-
-
-        ctx.lineTo(
-            x + 29,
-            y - 25
-        );
-
-
-        ctx.closePath();
-
-        ctx.fill();
-
-    }
-
-}
-
-
-// ==========================================
-// FOGATA
-// ==========================================
-
-function dibujarFogata() {
-
-    const x =
-        fogata.x -
-        camara.x;
-
-
-    const y =
-        fogata.y -
-        camara.y;
-
-
-    // Brillo de la fogata
-
-    if (
-        fogata.combustible > 0
-    ) {
-
-        const brillo =
-            ctx.createRadialGradient(
-
-                x,
-                y,
-
-                10,
-
-                x,
-                y,
-
-                160
-
-            );
-
-
-        brillo.addColorStop(
-            0,
-            "rgba(255,170,70,0.40)"
-        );
-
-
-        brillo.addColorStop(
-            1,
-            "rgba(255,120,30,0)"
-        );
-
-
-        ctx.fillStyle =
-            brillo;
-
-
-        ctx.beginPath();
-
-
-        ctx.arc(
-
-            x,
-            y,
-
-            160,
-
-            0,
-            Math.PI * 2
-
-        );
-
-
-        ctx.fill();
-
-    }
-
-
-    // Troncos
-
-    ctx.strokeStyle =
-        "#5c3921";
-
-
-    ctx.lineWidth =
-        9;
-
-
-    ctx.beginPath();
-
-
-    ctx.moveTo(
-        x - 20,
-        y + 15
-    );
-
-
-    ctx.lineTo(
-        x + 20,
-        y - 5
-    );
-
-
-    ctx.moveTo(
-        x + 20,
-        y + 15
-    );
-
-
-    ctx.lineTo(
-        x - 20,
-        y - 5
-    );
-
-
-    ctx.stroke();
-
-
-    if (
-        fogata.combustible <= 0
-    ) {
-
-        // Fogata apagada
-
-        ctx.fillStyle =
-            "#5a5a5a";
-
-
-        ctx.beginPath();
-
-
-        ctx.arc(
-            x,
-            y - 3,
-            7,
-            0,
-            Math.PI * 2
-        );
-
-
-        ctx.fill();
-
-
+    if (!jugando) {
         return;
+    }
+
+    moverJugador();
+
+    actualizarCamara();
+
+    dibujar();
+
+    requestAnimationFrame(bucle);
+}
+
+
+// ===============================
+// MENSAJE INICIAL
+// ===============================
+
+mensaje.textContent =
+    "Explora el bosque con WASD";
